@@ -1,0 +1,67 @@
+version: '3.8'
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: stopthebleed
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    ports:
+      - '3306:3306'
+    volumes:
+      - mysql_data:/var/lib/mysql
+  redis:
+    image: redis:7
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+  resource_inventory:
+    build: ../backend/resource_inventory
+    ports:
+      - '8001:8001'
+    depends_on:
+      - mysql
+      - redis
+  pricing_estimator:
+    build: ../backend/pricing_estimator
+    ports:
+      - '8002:8002'
+    depends_on:
+      - mysql
+      - redis
+  alerting:
+    build: ../backend/alerting
+    ports:
+      - '8003:8003'
+    depends_on:
+      - mysql
+      - redis
+  api_gateway:
+    build: ../backend/api_gateway
+    ports:
+      - '8000:8000'
+    depends_on:
+      - resource_inventory
+      - pricing_estimator
+      - alerting
+  frontend:
+    build: 
+      context: ../frontend
+      dockerfile: Dockerfile
+    ports:
+      - '3000:80'
+    depends_on:
+      - api_gateway
+  # frontend-dev:
+  #   image: node:18-alpine
+  #   working_dir: /app
+  #   volumes:
+  #     - ../frontend:/app
+  #   ports:
+  #     - '3000:3000'
+  #   command: npm start
+volumes:
+  mysql_data:
+  redis_data: 
